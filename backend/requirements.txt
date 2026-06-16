@@ -1,0 +1,4 @@
+# Rust Cargo DOS Commander - Python Dependencies
+# tkinter is part of Python standard library (no pip install needed)
+# Pillow is optional, included for potential future icon support
+Pillow==10.4.0
