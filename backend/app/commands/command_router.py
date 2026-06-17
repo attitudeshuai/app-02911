@@ -2,12 +2,13 @@
 Command router - parses user input and dispatches to appropriate handler.
 Central hub for all command processing.
 """
+
 import shlex
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from app.commands.base import CommandResult, OutputType
-from app.commands.dos_commands import DosCommands
 from app.commands.cargo_executor import CargoExecutor
+from app.commands.dos_commands import DosCommands
 from app.logger import logger
 
 
@@ -91,9 +92,13 @@ class CommandRouter:
         result.add_info("Type 'help' for a list of available commands.")
         return result
 
-    def execute_async(self, raw_input: str, cwd: str,
-                      on_output: Callable[[str, OutputType], None],
-                      on_complete: Callable[[int], None]) -> bool:
+    def execute_async(
+        self,
+        raw_input: str,
+        cwd: str,
+        on_output: Callable[[str, OutputType], None],
+        on_complete: Callable[[int], None],
+    ) -> bool:
         """Execute a command asynchronously (for cargo commands that may take long)."""
         command, args = self.parse_input(raw_input)
 

@@ -3,11 +3,12 @@ Cargo command executor.
 Handles all Rust Cargo subcommands with real subprocess execution
 and streaming output support.
 """
+
 import os
+import shutil
 import subprocess
 import threading
-import shutil
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from app.commands.base import CommandResult, OutputType
 from app.config import App
@@ -18,7 +19,7 @@ class CargoExecutor:
     """Executes Cargo commands as subprocesses with real-time output streaming."""
 
     def __init__(self):
-        self._current_process: Optional[subprocess.Popen] = None
+        self._current_process: subprocess.Popen | None = None
         self._cancelled = False
 
     @staticmethod
@@ -59,8 +60,7 @@ class CargoExecutor:
         """Get installed cargo version string."""
         try:
             result = subprocess.run(
-                [cls._get_cargo_path(), "--version"],
-                capture_output=True, text=True, timeout=10
+                [cls._get_cargo_path(), "--version"], capture_output=True, text=True, timeout=10
             )
             return result.stdout.strip() if result.returncode == 0 else "unknown"
         except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -78,8 +78,7 @@ class CargoExecutor:
         """Get installed rustc version string."""
         try:
             result = subprocess.run(
-                [cls._get_rustc_path(), "--version"],
-                capture_output=True, text=True, timeout=10
+                [cls._get_rustc_path(), "--version"], capture_output=True, text=True, timeout=10
             )
             return result.stdout.strip() if result.returncode == 0 else "unknown"
         except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -154,7 +153,7 @@ class CargoExecutor:
 
             if proc.returncode == 0:
                 result.add_line("")
-                result.add_success(f"Process finished with exit code 0")
+                result.add_success("Process finished with exit code 0")
             else:
                 result.add_line("")
                 result.add_error(f"Process finished with exit code {proc.returncode}")
@@ -176,13 +175,20 @@ class CargoExecutor:
 
         return result
 
-    def execute_async(self, args: list, cwd: str, on_output: Callable[[str, OutputType], None],
-                      on_complete: Callable[[int], None]):
+    def execute_async(
+        self,
+        args: list,
+        cwd: str,
+        on_output: Callable[[str, OutputType], None],
+        on_complete: Callable[[int], None],
+    ):
         """Execute a cargo command asynchronously with streaming output."""
         self._cancelled = False
 
         if not self.check_cargo_installed():
-            on_output("'cargo' is not recognized as an internal or external command.\n", OutputType.ERROR)
+            on_output(
+                "'cargo' is not recognized as an internal or external command.\n", OutputType.ERROR
+            )
             on_output("Rust is not installed. Install from: https://rustup.rs/\n", OutputType.INFO)
             on_complete(-1)
             return
@@ -227,14 +233,16 @@ class CargoExecutor:
                     on_output("\nProcess cancelled by user.\n", OutputType.WARNING)
                     on_complete(-1)
                 elif exit_code == 0:
-                    on_output(f"\nProcess finished with exit code 0\n", OutputType.SUCCESS)
+                    on_output("\nProcess finished with exit code 0\n", OutputType.SUCCESS)
                     on_complete(0)
                 else:
                     on_output(f"\nProcess finished with exit code {exit_code}\n", OutputType.ERROR)
                     on_complete(exit_code)
 
-                logger.info("Async cargo command completed: exit code %s",
-                            "cancelled" if self._cancelled else exit_code)
+                logger.info(
+                    "Async cargo command completed: exit code %s",
+                    "cancelled" if self._cancelled else exit_code,
+                )
 
             except Exception as e:
                 on_output(f"\nExecution error: {e}\n", OutputType.ERROR)

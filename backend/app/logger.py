@@ -2,6 +2,7 @@
 Centralized logging configuration.
 All modules should import logger from here.
 """
+
 import logging
 import os
 import sys

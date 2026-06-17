@@ -1,13 +1,14 @@
 """
 Base command interface and result container.
 """
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 
 class OutputType(Enum):
     """Output message type for color coding."""
+
     NORMAL = "normal"
     ERROR = "error"
     WARNING = "warning"
@@ -19,10 +20,11 @@ class OutputType(Enum):
 @dataclass
 class CommandResult:
     """Encapsulates the result of a command execution."""
+
     output: str = ""
     output_type: OutputType = OutputType.NORMAL
     success: bool = True
-    new_cwd: Optional[str] = None  # If command changes directory
+    new_cwd: str | None = None  # If command changes directory
     clear_screen: bool = False
     lines: list = field(default_factory=list)  # For multi-type output
 

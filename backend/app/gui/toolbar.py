@@ -1,18 +1,21 @@
 """
 Toolbar component with quick-action buttons for common Cargo operations.
 """
-import tkinter as tk
-from tkinter import font as tkfont
-from typing import Callable
 
-from app.config import Theme, Font
+import tkinter as tk
+from collections.abc import Callable
+from tkinter import font as tkfont
+
+from app.config import Font, Theme
 from app.logger import logger
 
 
 class ToolbarButton(tk.Label):
     """A styled toolbar button with hover effects."""
 
-    def __init__(self, parent, text: str, icon: str, command: Callable, tooltip: str = "", **kwargs):
+    def __init__(
+        self, parent, text: str, icon: str, command: Callable, tooltip: str = "", **kwargs
+    ):
         self._command = command
         self._tooltip = tooltip
 
@@ -59,8 +62,17 @@ class ToolbarButton(tk.Label):
         self._tip_window = tw = tk.Toplevel(self)
         tw.wm_overrideredirect(True)
         tw.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(tw, text=self._tooltip, bg="#333333", fg="#FFFFFF",
-                         font=("Consolas", 10), padx=8, pady=4, relief=tk.SOLID, borderwidth=1)
+        label = tk.Label(
+            tw,
+            text=self._tooltip,
+            bg="#333333",
+            fg="#FFFFFF",
+            font=("Consolas", 10),
+            padx=8,
+            pady=4,
+            relief=tk.SOLID,
+            borderwidth=1,
+        )
         label.pack()
 
     def _hide_tooltip(self):

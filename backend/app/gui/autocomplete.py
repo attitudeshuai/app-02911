@@ -2,20 +2,35 @@
 Command autocomplete popup.
 Provides Tab-completion for commands, cargo subcommands, and file paths.
 """
+
 import os
 import tkinter as tk
 from tkinter import font as tkfont
-from typing import Optional
 
-from app.config import Theme, Font, App
-from app.logger import logger
-
+from app.config import App, Font, Theme
 
 # All known commands for autocomplete
 BUILTIN_COMMANDS = [
-    "cargo", "cd", "cls", "clear", "del", "dir", "echo", "exit",
-    "help", "ls", "md", "mkdir", "pwd", "quit", "rd", "rm",
-    "rmdir", "tree", "type", "ver",
+    "cargo",
+    "cd",
+    "cls",
+    "clear",
+    "del",
+    "dir",
+    "echo",
+    "exit",
+    "help",
+    "ls",
+    "md",
+    "mkdir",
+    "pwd",
+    "quit",
+    "rd",
+    "rm",
+    "rmdir",
+    "tree",
+    "type",
+    "ver",
 ]
 
 CARGO_SUBCOMMANDS = list(App.CARGO_COMMANDS)
@@ -53,10 +68,17 @@ class AutocompletePopup(tk.Toplevel):
 
         # Listbox for suggestions
         self._listbox = tk.Listbox(
-            self, bg="#1E1E1E", fg="#CCCCCC", selectbackground="#094771",
-            selectforeground="#FFFFFF", font=self._font,
-            borderwidth=1, relief=tk.SOLID, highlightthickness=0,
-            activestyle="none", exportselection=False,
+            self,
+            bg="#1E1E1E",
+            fg="#CCCCCC",
+            selectbackground="#094771",
+            selectforeground="#FFFFFF",
+            font=self._font,
+            borderwidth=1,
+            relief=tk.SOLID,
+            highlightthickness=0,
+            activestyle="none",
+            exportselection=False,
         )
         self._listbox.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
 
@@ -112,7 +134,7 @@ class AutocompletePopup(tk.Toplevel):
         self._selected_index = max(self._selected_index - 1, 0)
         self._update_selection()
 
-    def get_selected(self) -> Optional[str]:
+    def get_selected(self) -> str | None:
         """Get the currently selected item."""
         if 0 <= self._selected_index < len(self._items):
             return self._items[self._selected_index]
@@ -170,7 +192,18 @@ class AutocompleteEngine:
                 return AutocompleteEngine._path_suggestions(cwd, last)
 
         # File path completion for commands that take paths
-        if parts[0].lower() in ("cd", "dir", "ls", "type", "cat", "mkdir", "rmdir", "del", "rm", "tree"):
+        if parts[0].lower() in (
+            "cd",
+            "dir",
+            "ls",
+            "type",
+            "cat",
+            "mkdir",
+            "rmdir",
+            "del",
+            "rm",
+            "tree",
+        ):
             partial = parts[-1] if len(parts) > 1 and not text.endswith(" ") else ""
             return AutocompleteEngine._path_suggestions(cwd, partial)
 

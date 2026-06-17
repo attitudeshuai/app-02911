@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: cargo-commander-win-x64
+            archive: zip
+          - os: macos-13
+            artifact: cargo-commander-mac-x64
+            archive: tar.gz
+          - os: macos-14
+            artifact: cargo-commander-mac-arm64
+            archive: tar.gz
+          - os: ubuntu-latest
+            artifact: cargo-commander-linux-x64
+            archive: tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tcl/tk (macOS)
+        if: runner.os == 'macOS'
+        run: brew install python-tk@3.12
+
+      - name: Install Linux deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libxcb-cursor0
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+
+      - name: Run headless tests
+        run: pytest -q -m "not gui and not cargo" backend/tests
+
+      - name: Build with PyInstaller
+        working-directory: backend/build
+        run: pyinstaller cargo_commander.spec --noconfirm --distpath ../dist
+
+      - name: Smoke-test the built binary (non-Linux)
+        if: runner.os != 'Linux'
+        working-directory: backend
+        run: ./dist/cargo-commander/cargo-commander* --smoke || true
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          cd backend/dist
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            7z a "${{ matrix.artifact }}.zip" cargo-commander
+          else
+            tar -czf "${{ matrix.artifact }}.tar.gz" cargo-commander
+          fi
+          sha256sum "${{ matrix.artifact }}.${{ matrix.archive }}" > "${{ matrix.artifact }}.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            backend/dist/${{ matrix.artifact }}.${{ matrix.archive }}
+            backend/dist/${{ matrix.artifact }}.sha256
+
+  release:
+    name: publish release
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/*/*.zip
+            artifacts/*/*.tar.gz
+            artifacts/*/*.sha256

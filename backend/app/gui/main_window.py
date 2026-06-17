@@ -4,20 +4,21 @@ Orchestrates all GUI components and command execution.
 Integrates: file browser, multi-tab terminal, autocomplete, syntax highlighting,
 and Cargo.toml visual editor.
 """
+
 import os
 import tkinter as tk
 from tkinter import messagebox
 
-from app.config import Theme, Window, App
-from app.commands.command_router import CommandRouter
 from app.commands.base import OutputType
-from app.gui.tab_terminal import TabTerminalManager
-from app.gui.toolbar import Toolbar
-from app.gui.statusbar import StatusBar
-from app.gui.file_browser import FileBrowser
+from app.commands.command_router import CommandRouter
+from app.config import App, Theme, Window
 from app.gui.dialogs import NewProjectDialog
+from app.gui.file_browser import FileBrowser
+from app.gui.statusbar import StatusBar
+from app.gui.syntax_highlight import SyntaxHighlighter
+from app.gui.tab_terminal import TabTerminalManager
 from app.gui.toml_editor import TomlEditorDialog
-from app.gui.syntax_highlight import SyntaxHighlighter, CompileErrorFormatter
+from app.gui.toolbar import Toolbar
 from app.logger import logger
 
 
@@ -70,14 +71,20 @@ class MainWindow:
 
         # Main content area (horizontal split: file browser | terminal)
         self._main_pane = tk.PanedWindow(
-            self._root, orient=tk.HORIZONTAL, bg=Theme.BORDER,
-            sashwidth=3, sashrelief=tk.FLAT, borderwidth=0,
+            self._root,
+            orient=tk.HORIZONTAL,
+            bg=Theme.BORDER,
+            sashwidth=3,
+            sashrelief=tk.FLAT,
+            borderwidth=0,
         )
         self._main_pane.pack(fill=tk.BOTH, expand=True)
 
         # File browser panel (left)
         self._browser_frame = tk.Frame(self._main_pane, bg=Theme.TOOLBAR_BG, width=250)
-        self._file_browser = FileBrowser(self._browser_frame, self._cwd, self._on_file_browser_action)
+        self._file_browser = FileBrowser(
+            self._browser_frame, self._cwd, self._on_file_browser_action
+        )
         self._file_browser.pack(fill=tk.BOTH, expand=True)
         self._main_pane.add(self._browser_frame, minsize=180, width=250)
 
@@ -232,9 +239,7 @@ class MainWindow:
         # Apply syntax highlighting over the inserted code
         start_line = terminal._text.index(tk.END).split(".")[0]
         code_start_line = int(start_line) - content.count("\n") - 1
-        SyntaxHighlighter.highlight_rust_code(
-            terminal._text, content, f"{code_start_line}.0"
-        )
+        SyntaxHighlighter.highlight_rust_code(terminal._text, content, f"{code_start_line}.0")
         terminal._text.see(tk.END)
 
     def _toggle_file_browser(self):
@@ -243,7 +248,9 @@ class MainWindow:
             self._main_pane.forget(self._browser_frame)
             self._file_browser_visible = False
         else:
-            self._main_pane.add(self._browser_frame, before=self._terminal_frame, minsize=180, width=250)
+            self._main_pane.add(
+                self._browser_frame, before=self._terminal_frame, minsize=180, width=250
+            )
             self._file_browser_visible = True
 
     def _open_toml_editor(self):
@@ -257,7 +264,9 @@ class MainWindow:
                     toml_path = candidate
                     break
             else:
-                self._tab_manager.write_line("No Cargo.toml found in current directory.", OutputType.WARNING)
+                self._tab_manager.write_line(
+                    "No Cargo.toml found in current directory.", OutputType.WARNING
+                )
                 self._tab_manager.finish_command()
                 return
 
@@ -265,6 +274,7 @@ class MainWindow:
 
     def _open_toml_editor_for(self, toml_path: str):
         """Open the TOML editor for a specific file."""
+
         def on_save():
             self._tab_manager.write_line(f"Cargo.toml saved: {toml_path}", OutputType.SUCCESS)
             self._file_browser.refresh()
@@ -287,8 +297,7 @@ class MainWindow:
     def _on_close(self):
         """Handle window close."""
         if self._is_busy:
-            if not messagebox.askyesno("Confirm Exit",
-                                       "A process is still running. Exit anyway?"):
+            if not messagebox.askyesno("Confirm Exit", "A process is still running. Exit anyway?"):
                 return
             self._router.cancel_running()
 

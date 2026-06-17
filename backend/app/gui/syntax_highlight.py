@@ -3,44 +3,103 @@ Syntax highlighting for Rust source code and simulated compile error display.
 Provides keyword-based highlighting for .rs files shown via 'type' command,
 and formatted display of cargo build errors.
 """
+
 import re
 import tkinter as tk
-from typing import Optional
 
-from app.config import Theme
 from app.commands.base import OutputType
 
 
 # Rust syntax token colors
 class RustColors:
-    KEYWORD = "#569CD6"       # blue - fn, let, mut, pub, struct, etc.
-    TYPE = "#4EC9B0"          # teal - i32, String, Vec, etc.
-    STRING = "#CE9178"        # orange - string literals
-    COMMENT = "#6A9955"       # green - comments
-    NUMBER = "#B5CEA8"        # light green - numeric literals
-    MACRO = "#DCDCAA"         # yellow - macros like println!
-    ATTRIBUTE = "#C586C0"     # purple - #[derive(...)]
-    LIFETIME = "#D7BA7D"      # gold - 'a, 'static
-    OPERATOR = "#D4D4D4"      # light gray
-    FUNCTION = "#DCDCAA"      # yellow - function names
+    KEYWORD = "#569CD6"  # blue - fn, let, mut, pub, struct, etc.
+    TYPE = "#4EC9B0"  # teal - i32, String, Vec, etc.
+    STRING = "#CE9178"  # orange - string literals
+    COMMENT = "#6A9955"  # green - comments
+    NUMBER = "#B5CEA8"  # light green - numeric literals
+    MACRO = "#DCDCAA"  # yellow - macros like println!
+    ATTRIBUTE = "#C586C0"  # purple - #[derive(...)]
+    LIFETIME = "#D7BA7D"  # gold - 'a, 'static
+    OPERATOR = "#D4D4D4"  # light gray
+    FUNCTION = "#DCDCAA"  # yellow - function names
 
 
 # Rust keywords
 RUST_KEYWORDS = {
-    "as", "async", "await", "break", "const", "continue", "crate", "dyn",
-    "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in",
-    "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return",
-    "self", "Self", "static", "struct", "super", "trait", "true", "type",
-    "unsafe", "use", "where", "while", "yield",
+    "as",
+    "async",
+    "await",
+    "break",
+    "const",
+    "continue",
+    "crate",
+    "dyn",
+    "else",
+    "enum",
+    "extern",
+    "false",
+    "fn",
+    "for",
+    "if",
+    "impl",
+    "in",
+    "let",
+    "loop",
+    "match",
+    "mod",
+    "move",
+    "mut",
+    "pub",
+    "ref",
+    "return",
+    "self",
+    "Self",
+    "static",
+    "struct",
+    "super",
+    "trait",
+    "true",
+    "type",
+    "unsafe",
+    "use",
+    "where",
+    "while",
+    "yield",
 }
 
 RUST_TYPES = {
-    "i8", "i16", "i32", "i64", "i128", "isize",
-    "u8", "u16", "u32", "u64", "u128", "usize",
-    "f32", "f64", "bool", "char", "str",
-    "String", "Vec", "Option", "Result", "Box", "Rc", "Arc",
-    "HashMap", "HashSet", "BTreeMap", "BTreeSet",
-    "Ok", "Err", "Some", "None",
+    "i8",
+    "i16",
+    "i32",
+    "i64",
+    "i128",
+    "isize",
+    "u8",
+    "u16",
+    "u32",
+    "u64",
+    "u128",
+    "usize",
+    "f32",
+    "f64",
+    "bool",
+    "char",
+    "str",
+    "String",
+    "Vec",
+    "Option",
+    "Result",
+    "Box",
+    "Rc",
+    "Arc",
+    "HashMap",
+    "HashSet",
+    "BTreeMap",
+    "BTreeSet",
+    "Ok",
+    "Err",
+    "Some",
+    "None",
 }
 
 # Regex patterns for Rust syntax
@@ -53,7 +112,10 @@ RUST_PATTERNS = [
     ("attribute", r"#\[[\w:(),\s]*\]"),
     ("lifetime", r"'\w+"),
     ("macro_call", r"\b\w+!"),
-    ("number", r"\b(?:0x[\da-fA-F_]+|0b[01_]+|0o[0-7_]+|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][+-]?\d+)?)\b"),
+    (
+        "number",
+        r"\b(?:0x[\da-fA-F_]+|0b[01_]+|0o[0-7_]+|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][+-]?\d+)?)\b",
+    ),
     ("keyword", r"\b(?:" + "|".join(RUST_KEYWORDS) + r")\b"),
     ("type", r"\b(?:" + "|".join(RUST_TYPES) + r")\b"),
     ("function_def", r"(?<=fn\s)\w+"),
@@ -95,7 +157,6 @@ class SyntaxHighlighter:
         lines = code.split("\n")
         for line_num, line in enumerate(lines):
             line_start = f"{start_index}+{line_num}lines linestart"
-            line_end = f"{start_index}+{line_num}lines lineend"
 
             # Apply patterns (order matters - later patterns can override)
             for token_name, pattern in COMPILED_PATTERNS:
@@ -168,7 +229,7 @@ class CompileErrorFormatter:
     @staticmethod
     def generate_sample_error(project_name: str = "my_project") -> str:
         """Generate a sample Rust compile error for demonstration."""
-        return f"""error[E0308]: mismatched types
+        return """error[E0308]: mismatched types
  --> src/main.rs:5:20
   |
 5 |     let x: i32 = "hello";
@@ -181,7 +242,7 @@ class CompileErrorFormatter:
 error[E0425]: cannot find value `y` in this scope
  --> src/main.rs:8:20
   |
-8 |     println!("{{}}", y);
+8 |     println!("{}", y);
   |                      ^ not found in this scope
   |
   = help: consider declaring a variable: `let y = ...;`

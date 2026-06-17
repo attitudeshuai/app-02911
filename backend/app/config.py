@@ -2,12 +2,14 @@
 Application configuration constants.
 Centralized config to avoid hardcoded values scattered across modules.
 """
+
 import os
 import platform
 
 
 class Theme:
     """DOS-style terminal color theme."""
+
     BG = "#0C0C0C"
     FG = "#00FF00"
     FG_DIM = "#008800"
@@ -29,6 +31,7 @@ class Theme:
 
 class Font:
     """Font configuration."""
+
     FAMILY_CANDIDATES = ("Consolas", "Courier New", "Menlo", "DejaVu Sans Mono", "monospace")
     SIZE = 14
     SIZE_SMALL = 12
@@ -37,6 +40,7 @@ class Font:
 
 class Window:
     """Window dimensions."""
+
     MIN_WIDTH = 1024
     MIN_HEIGHT = 700
     DEFAULT_WIDTH = 1200
@@ -46,6 +50,7 @@ class Window:
 
 class App:
     """Application settings."""
+
     MAX_HISTORY = 500
     MAX_SCROLLBACK = 10000
     DEFAULT_WORKSPACE = os.path.expanduser("~/rust_projects")
@@ -58,6 +63,15 @@ class App:
 
     # Supported cargo subcommands
     CARGO_COMMANDS = (
-        "new", "build", "run", "test", "check", "clean",
-        "doc", "bench", "update", "fmt", "clippy",
+        "new",
+        "build",
+        "run",
+        "test",
+        "check",
+        "clean",
+        "doc",
+        "bench",
+        "update",
+        "fmt",
+        "clippy",
     )

@@ -25,11 +25,15 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Dev dependencies for CI-style headless testing
+RUN pip install --no-cache-dir ruff==0.6.9 pytest==8.3.3
+
 # Copy application code
 COPY . .
 
 # Create workspace directory
 RUN mkdir -p /root/rust_projects
 
-# Default command (headless validation - imports check)
-CMD ["python", "-c", "import app; print(f'Cargo Commander v{app.__version__} - OK')"]
+# Headless validation: lint + run the GUI-free command tests.
+# (GUI smoke is skipped here because the container has no display.)
+CMD ["sh", "-c", "ruff check app && pytest -q -m 'not gui and not cargo' tests"]

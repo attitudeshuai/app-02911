@@ -2,15 +2,14 @@
 Terminal emulator widget.
 DOS-style terminal with command input, history, and colored output.
 """
-import os
-import tkinter as tk
-from tkinter import font as tkfont
-from typing import Callable, Optional
 
-from app.config import Theme, Font, App
+import tkinter as tk
+from collections.abc import Callable
+from tkinter import font as tkfont
+
 from app.commands.base import OutputType
-from app.gui.autocomplete import AutocompletePopup, AutocompleteEngine
-from app.logger import logger
+from app.config import App, Font, Theme
+from app.gui.autocomplete import AutocompleteEngine, AutocompletePopup
 
 
 class TerminalWidget(tk.Frame):
@@ -36,7 +35,7 @@ class TerminalWidget(tk.Frame):
         self._cwd: str = App.DEFAULT_WORKSPACE
         self._is_busy: bool = False
 
-        self._autocomplete: Optional[AutocompletePopup] = None
+        self._autocomplete: AutocompletePopup | None = None
 
         self._setup_font()
         self._setup_widgets()
@@ -57,9 +56,14 @@ class TerminalWidget(tk.Frame):
     def _setup_widgets(self):
         """Create the text widget and scrollbar."""
         # Scrollbar
-        self._scrollbar = tk.Scrollbar(self, bg=Theme.SCROLLBAR, troughcolor=Theme.BG,
-                                       activebackground=Theme.TOOLBAR_BTN_HOVER,
-                                       highlightthickness=0, bd=0)
+        self._scrollbar = tk.Scrollbar(
+            self,
+            bg=Theme.SCROLLBAR,
+            troughcolor=Theme.BG,
+            activebackground=Theme.TOOLBAR_BTN_HOVER,
+            highlightthickness=0,
+            bd=0,
+        )
         self._scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Main text area
@@ -261,7 +265,7 @@ class TerminalWidget(tk.Frame):
             return "break"
         return None  # Allow default behavior
 
-    def _on_key(self, event) -> Optional[str]:
+    def _on_key(self, event) -> str | None:
         """Handle general key presses - prevent editing before prompt."""
         if self._is_busy and event.char:
             return "break"
@@ -291,7 +295,7 @@ class TerminalWidget(tk.Frame):
         self._show_prompt()
         return "break"
 
-    def _on_click(self, event) -> Optional[str]:
+    def _on_click(self, event) -> str | None:
         """Ensure cursor stays in editable area after click."""
         self._text.after(10, self._ensure_cursor_position)
         return None
@@ -329,12 +333,24 @@ class TerminalWidget(tk.Frame):
         """Initialize terminal with welcome message."""
         self._cwd = cwd
         self.write_line("", OutputType.NORMAL)
-        self.write_line("  ╔══════════════════════════════════════════════════════╗", OutputType.SYSTEM)
-        self.write_line("  ║       Rust Cargo DOS Commander [Version 1.0]        ║", OutputType.SYSTEM)
-        self.write_line("  ║                                                      ║", OutputType.SYSTEM)
-        self.write_line("  ║  A DOS-style terminal for Rust/Cargo development.   ║", OutputType.SYSTEM)
-        self.write_line("  ║  Type 'help' for available commands.                ║", OutputType.SYSTEM)
-        self.write_line("  ╚══════════════════════════════════════════════════════╝", OutputType.SYSTEM)
+        self.write_line(
+            "  ╔══════════════════════════════════════════════════════╗", OutputType.SYSTEM
+        )
+        self.write_line(
+            "  ║       Rust Cargo DOS Commander [Version 1.0]        ║", OutputType.SYSTEM
+        )
+        self.write_line(
+            "  ║                                                      ║", OutputType.SYSTEM
+        )
+        self.write_line(
+            "  ║  A DOS-style terminal for Rust/Cargo development.   ║", OutputType.SYSTEM
+        )
+        self.write_line(
+            "  ║  Type 'help' for available commands.                ║", OutputType.SYSTEM
+        )
+        self.write_line(
+            "  ╚══════════════════════════════════════════════════════╝", OutputType.SYSTEM
+        )
         self.write_line("", OutputType.NORMAL)
         self._show_prompt()
         self._text.focus_set()
@@ -361,8 +377,9 @@ class TerminalWidget(tk.Frame):
             for text, otype in result.lines:
                 self.write_line(text, otype)
         elif result.output and result.output != "__EXIT__":
-            self.write_line(result.output,
-                            OutputType.ERROR if not result.success else OutputType.NORMAL)
+            self.write_line(
+                result.output, OutputType.ERROR if not result.success else OutputType.NORMAL
+            )
 
         if result.new_cwd:
             self._cwd = result.new_cwd

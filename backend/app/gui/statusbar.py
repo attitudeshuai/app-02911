@@ -1,11 +1,12 @@
 """
 Status bar component showing current directory, Rust version, and process status.
 """
+
 import tkinter as tk
 from tkinter import font as tkfont
 
-from app.config import Theme, Font
 from app.commands.cargo_executor import CargoExecutor
+from app.config import Font, Theme
 
 
 class StatusBar(tk.Frame):
@@ -18,21 +19,32 @@ class StatusBar(tk.Frame):
 
         # Left: current directory
         self._cwd_label = tk.Label(
-            self, text="", bg=Theme.STATUSBAR_BG, fg=Theme.STATUSBAR_FG,
-            font=self._font, anchor=tk.W,
+            self,
+            text="",
+            bg=Theme.STATUSBAR_BG,
+            fg=Theme.STATUSBAR_FG,
+            font=self._font,
+            anchor=tk.W,
         )
         self._cwd_label.pack(side=tk.LEFT)
 
         # Right: Rust version
         self._rust_label = tk.Label(
-            self, text="", bg=Theme.STATUSBAR_BG, fg=Theme.STATUSBAR_FG,
-            font=self._font, anchor=tk.E,
+            self,
+            text="",
+            bg=Theme.STATUSBAR_BG,
+            fg=Theme.STATUSBAR_FG,
+            font=self._font,
+            anchor=tk.E,
         )
         self._rust_label.pack(side=tk.RIGHT)
 
         # Center: status
         self._status_label = tk.Label(
-            self, text="Ready", bg=Theme.STATUSBAR_BG, fg=Theme.STATUSBAR_FG,
+            self,
+            text="Ready",
+            bg=Theme.STATUSBAR_BG,
+            fg=Theme.STATUSBAR_FG,
             font=self._font,
         )
         self._status_label.pack(side=tk.RIGHT, padx=20)

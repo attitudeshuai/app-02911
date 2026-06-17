@@ -1,12 +1,13 @@
 """
 Custom dialog windows for the application.
 """
+
 import os
 import tkinter as tk
+from collections.abc import Callable
 from tkinter import font as tkfont
-from typing import Callable, Optional
 
-from app.config import Theme, Font
+from app.config import Font, Theme
 
 
 class NewProjectDialog(tk.Toplevel):
@@ -39,8 +40,12 @@ class NewProjectDialog(tk.Toplevel):
         """Build dialog UI."""
         # Title
         tk.Label(
-            self, text="🦀 Create New Rust Project", bg=Theme.TOOLBAR_BG,
-            fg="#E06C00", font=self._font_title, pady=12,
+            self,
+            text="🦀 Create New Rust Project",
+            bg=Theme.TOOLBAR_BG,
+            fg="#E06C00",
+            font=self._font_title,
+            pady=12,
         ).pack(fill=tk.X)
 
         # Form frame
@@ -48,18 +53,35 @@ class NewProjectDialog(tk.Toplevel):
         form.pack(fill=tk.BOTH, expand=True)
 
         # Project name
-        tk.Label(form, text="Project Name:", bg=Theme.TOOLBAR_BG, fg=Theme.TOOLBAR_BTN_TEXT,
-                 font=self._font, anchor=tk.W).pack(fill=tk.X, pady=(8, 2))
+        tk.Label(
+            form,
+            text="Project Name:",
+            bg=Theme.TOOLBAR_BG,
+            fg=Theme.TOOLBAR_BTN_TEXT,
+            font=self._font,
+            anchor=tk.W,
+        ).pack(fill=tk.X, pady=(8, 2))
         self._name_entry = tk.Entry(
-            form, bg="#1A1A1A", fg=Theme.FG, insertbackground=Theme.FG,
-            font=self._font, relief=tk.FLAT, borderwidth=4,
+            form,
+            bg="#1A1A1A",
+            fg=Theme.FG,
+            insertbackground=Theme.FG,
+            font=self._font,
+            relief=tk.FLAT,
+            borderwidth=4,
         )
         self._name_entry.pack(fill=tk.X, pady=(0, 8))
         self._name_entry.focus_set()
 
         # Project type
-        tk.Label(form, text="Project Type:", bg=Theme.TOOLBAR_BG, fg=Theme.TOOLBAR_BTN_TEXT,
-                 font=self._font, anchor=tk.W).pack(fill=tk.X, pady=(8, 2))
+        tk.Label(
+            form,
+            text="Project Type:",
+            bg=Theme.TOOLBAR_BG,
+            fg=Theme.TOOLBAR_BTN_TEXT,
+            font=self._font,
+            anchor=tk.W,
+        ).pack(fill=tk.X, pady=(8, 2))
 
         self._project_type = tk.StringVar(value="bin")
         type_frame = tk.Frame(form, bg=Theme.TOOLBAR_BG)
@@ -67,24 +89,46 @@ class NewProjectDialog(tk.Toplevel):
 
         for text, value in [("Binary (--bin)", "bin"), ("Library (--lib)", "lib")]:
             tk.Radiobutton(
-                type_frame, text=text, variable=self._project_type, value=value,
-                bg=Theme.TOOLBAR_BG, fg=Theme.TOOLBAR_BTN_TEXT, selectcolor=Theme.BG,
-                activebackground=Theme.TOOLBAR_BG, activeforeground=Theme.FG,
+                type_frame,
+                text=text,
+                variable=self._project_type,
+                value=value,
+                bg=Theme.TOOLBAR_BG,
+                fg=Theme.TOOLBAR_BTN_TEXT,
+                selectcolor=Theme.BG,
+                activebackground=Theme.TOOLBAR_BG,
+                activeforeground=Theme.FG,
                 font=self._font,
             ).pack(side=tk.LEFT, padx=(0, 16))
 
         # Location display
-        tk.Label(form, text="Location:", bg=Theme.TOOLBAR_BG, fg=Theme.TOOLBAR_BTN_TEXT,
-                 font=self._font, anchor=tk.W).pack(fill=tk.X, pady=(8, 2))
+        tk.Label(
+            form,
+            text="Location:",
+            bg=Theme.TOOLBAR_BG,
+            fg=Theme.TOOLBAR_BTN_TEXT,
+            font=self._font,
+            anchor=tk.W,
+        ).pack(fill=tk.X, pady=(8, 2))
         self._location_label = tk.Label(
-            form, text=self._cwd, bg="#1A1A1A", fg=Theme.FG_DIM,
-            font=self._font, anchor=tk.W, padx=4, pady=4,
+            form,
+            text=self._cwd,
+            bg="#1A1A1A",
+            fg=Theme.FG_DIM,
+            font=self._font,
+            anchor=tk.W,
+            padx=4,
+            pady=4,
         )
         self._location_label.pack(fill=tk.X, pady=(0, 8))
 
         # Error label
         self._error_label = tk.Label(
-            form, text="", bg=Theme.TOOLBAR_BG, fg=Theme.ERROR, font=self._font,
+            form,
+            text="",
+            bg=Theme.TOOLBAR_BG,
+            fg=Theme.ERROR,
+            font=self._font,
         )
         self._error_label.pack(fill=tk.X)
 
@@ -93,8 +137,14 @@ class NewProjectDialog(tk.Toplevel):
         btn_frame.pack(fill=tk.X)
 
         cancel_btn = tk.Label(
-            btn_frame, text=" Cancel ", bg=Theme.TOOLBAR_BTN, fg=Theme.TOOLBAR_BTN_TEXT,
-            font=self._font, padx=16, pady=6, cursor="hand2",
+            btn_frame,
+            text=" Cancel ",
+            bg=Theme.TOOLBAR_BTN,
+            fg=Theme.TOOLBAR_BTN_TEXT,
+            font=self._font,
+            padx=16,
+            pady=6,
+            cursor="hand2",
         )
         cancel_btn.pack(side=tk.RIGHT, padx=4)
         cancel_btn.bind("<Button-1>", lambda e: self.destroy())
@@ -102,8 +152,14 @@ class NewProjectDialog(tk.Toplevel):
         cancel_btn.bind("<Leave>", lambda e: cancel_btn.config(bg=Theme.TOOLBAR_BTN))
 
         create_btn = tk.Label(
-            btn_frame, text=" Create ", bg="#007ACC", fg="#FFFFFF",
-            font=self._font, padx=16, pady=6, cursor="hand2",
+            btn_frame,
+            text=" Create ",
+            bg="#007ACC",
+            fg="#FFFFFF",
+            font=self._font,
+            padx=16,
+            pady=6,
+            cursor="hand2",
         )
         create_btn.pack(side=tk.RIGHT, padx=4)
         create_btn.bind("<Button-1>", lambda e: self._on_submit())
