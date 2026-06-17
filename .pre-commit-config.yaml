@@ -1,0 +1,25 @@
+repos:
+  - repo: local
+    hooks:
+      - id: smoke-test
+        name: Smoke Test (imports + basic commands)
+        entry: python backend/main.py --check
+        language: system
+        pass_filenames: false
+        files: ^backend/
+        description: Run smoke test to verify app can start and basic commands work
+
+      - id: unit-tests
+        name: Unit Tests
+        entry: python -m pytest backend/tests/ -q --tb=short
+        language: system
+        pass_filenames: false
+        files: ^backend/(app|tests)/
+        description: Run full unit test suite
+
+      - id: check-syntax
+        name: Python Syntax Check
+        entry: python -m py_compile
+        language: system
+        types: [python]
+        description: Check Python files for syntax errors

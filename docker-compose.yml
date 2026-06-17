@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  # Rust Cargo DOS Commander
+  # Rust Cargo DOS Commander - GUI mode (requires X11 forwarding)
   # NOTE: This is a desktop GUI application (tkinter).
   # Docker is provided for build validation and CI testing only.
   # For actual usage, run natively: cd backend && python main.py
@@ -16,6 +16,42 @@ services:
       - rust_projects:/root/rust_projects
     environment:
       - DISPLAY=${DISPLAY:-:0}
+    restart: "no"
+
+  # Smoke test - quick validation
+  check:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cargo-commander-check
+    command: ["--check"]
+    volumes:
+      - rust_projects:/root/rust_projects
+    restart: "no"
+
+  # Full test suite
+  test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cargo-commander-test
+    entrypoint: ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
+    working_dir: /app
+    volumes:
+      - rust_projects:/root/rust_projects
+    restart: "no"
+
+  # Headless interactive mode
+  headless:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cargo-commander-headless
+    command: ["--headless"]
+    volumes:
+      - rust_projects:/root/rust_projects
+    stdin_open: true
+    tty: true
     restart: "no"
 
 volumes:
