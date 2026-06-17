@@ -1,6 +1,16 @@
 # Rust Cargo DOS Commander - Docker Build
 # Note: This is a GUI application. Docker is provided for CI/testing purposes.
 # For actual usage, run natively with: python main.py
+#
+# Stages:
+#   base     - runtime with all dependencies
+#   test     - base + test dependencies (for CI)
+#
+# Usage:
+#   Build:            docker build -t cargo-commander .
+#   Run smoke test:   docker run --rm cargo-commander smoke
+#   Run unit tests:   docker run --rm cargo-commander test
+#   Run all tests:    docker run --rm cargo-commander all
 
 FROM python:3.12-slim AS base
 
@@ -21,9 +31,9 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
-# Install Python dependencies
+# Install runtime Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir Pillow==10.4.0
 
 # Copy application code
 COPY . .
@@ -33,3 +43,16 @@ RUN mkdir -p /root/rust_projects
 
 # Default command (headless validation - imports check)
 CMD ["python", "-c", "import app; print(f'Cargo Commander v{app.__version__} - OK')"]
+
+# ---- Test stage ----
+FROM base AS test
+
+# Install test dependencies
+RUN pip install --no-cache-dir pytest==8.3.3 pytest-cov==5.0.0
+
+# Entry point script for different test modes
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["all"]

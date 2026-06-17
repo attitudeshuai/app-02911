@@ -1,0 +1,47 @@
+# Pre-commit hooks for Cargo Commander
+# Install: pre-commit install
+# Run all: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        language_version: python3.10
+        files: ^backend/.*\.py$
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        files: ^backend/app/.*\.py$
+        args: [--max-line-length=120, --extend-ignore=E203,W503]
+
+  - repo: local
+    hooks:
+      - id: smoke-test
+        name: Smoke Test (headless)
+        entry: bash -c 'cd backend && python smoke_test.py'
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: unit-tests
+        name: Unit Tests
+        entry: bash -c 'cd backend && python -m pytest tests/ -v --tb=short'
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-push]
