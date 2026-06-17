@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  # Rust Cargo DOS Commander
+  # Rust Cargo DOS Commander - runtime
   # NOTE: This is a desktop GUI application (tkinter).
   # Docker is provided for build validation and CI testing only.
   # For actual usage, run natively: cd backend && python main.py
@@ -9,6 +9,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: base
     container_name: cargo-commander
     ports:
       - "9999:9999"
@@ -17,6 +18,23 @@ services:
     environment:
       - DISPLAY=${DISPLAY:-:0}
     restart: "no"
+
+  # Test service - runs headless tests (smoke + unit + coverage)
+  # Usage: docker-compose run --rm test
+  #        docker-compose run --rm test smoke
+  #        docker-compose run --rm test test
+  test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    container_name: cargo-commander-test
+    volumes:
+      - ./backend:/app:ro
+      - rust_projects:/root/rust_projects
+    command: ["all"]
+    profiles:
+      - test
 
 volumes:
   rust_projects:

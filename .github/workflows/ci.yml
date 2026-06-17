@@ -1,0 +1,383 @@
+name: CI - Test & Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+env:
+  # === LOCKED VERSIONS - do not change without testing on all platforms
+  # These versions have been verified to produce working builds.
+  PYTHON_VERSION: "3.12.10"
+  PILLOW_VERSION: "10.4.0"
+  PYINSTALLER_VERSION: "6.11.1"
+  PYTEST_VERSION: "8.3.4"
+  PYTEST_COV_VERSION: "5.0.0"
+  # Tcl/Tk version is bundled with Python (8.6.15 for Python 3.12.10 on Windows)
+  # Verify with: python -c "import tkinter; print(tkinter.Tcl().eval('info patchlevel'))"
+
+jobs:
+  test:
+    name: Test (Headless)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies (tkinter)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk xvfb
+
+      - name: Install Python dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install Pillow==${{ env.PILLOW_VERSION }}
+          pip install pytest==${{ env.PYTEST_VERSION }} pytest-cov==${{ env.PYTEST_COV_VERSION }}
+
+      - name: Verify Tcl/Tk version
+        run: |
+          python -c "import tkinter; print('Tcl/Tk version:', tkinter.TkVersion, '-', __import__('tkinter').Tcl().eval('info patchlevel'))"
+
+      - name: Run unit tests
+        working-directory: backend
+        run: |
+          python -m pytest tests/ -v --tb=short
+
+      - name: Run standalone smoke test
+        working-directory: backend
+        run: |
+          python smoke_test.py --verbose
+
+      - name: Run tests with coverage
+        working-directory: backend
+        run: |
+          python -m pytest tests/ -v --cov=app --cov-report=term-missing --cov-fail-under=60
+
+  build-windows:
+    name: Build (Windows)
+    needs: test
+    runs-on: windows-2022
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python (locked version)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.10"
+          architecture: 'x64'
+
+      - name: Verify Python version
+        run: |
+          python --version
+          python -c "import sys; assert sys.version.startswith('3.12.10'), f'Wrong Python version: ' + sys.version"
+
+      - name: Verify Tcl/Tk version
+        run: |
+          python -c "import tkinter; print('Tcl/Tk:', tkinter.TkVersion)"
+
+      - name: Install locked build dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-deps -r build-requirements.txt
+          pip install -r build-requirements.txt
+
+      - name: Validate build environment
+        working-directory: backend
+        run: |
+          python validate_build_env.py --strict
+
+      - name: Run source smoke test
+        working-directory: backend
+        run: |
+          python main.py --smoke-test
+
+      - name: Build executable
+        working-directory: backend
+        run: |
+          pyinstaller --clean --noconfirm cargo_commander.spec
+
+      - name: Verify build output exists
+        working-directory: backend
+        run: |
+          if (Test-Path "dist\CargoCommander.exe") {
+            $size = [math]::Round((Get-Item "dist\CargoCommander.exe").Length / 1MB, 2)
+            Write-Host "Build successful: dist\CargoCommander.exe ($size MB)"
+          } else {
+            Write-Error "Build failed: executable not found"
+            exit 1
+          }
+
+      - name: Run smoke test on BUILT executable
+        working-directory: backend
+        run: |
+          $resultFile = "ci_smoke_result.json"
+          if (Test-Path $resultFile) { Remove-Item $resultFile }
+
+          $proc = Start-Process -FilePath ".\dist\CargoCommander.exe" `
+            -ArgumentList "--smoke-test", "--smoke-output", $resultFile `
+            -NoNewWindow -Wait -PassThru
+
+          Write-Host "Exit code: $($proc.ExitCode)"
+
+          if ($proc.ExitCode -ne 0) {
+            Write-Error "Built executable smoke test FAILED with exit code $($proc.ExitCode)"
+            exit 1
+          }
+
+          if (-not (Test-Path $resultFile)) {
+            Write-Error "Result file not created"
+            exit 1
+          }
+
+          $result = Get-Content $resultFile | ConvertFrom-Json
+          if (-not $result.success) {
+            Write-Error "Smoke test reported failure"
+            exit 1
+          }
+
+          Write-Host "Built executable smoke test PASSED: $($result.checks.Count) checks OK"
+          Write-Host "  Version: $($result.version)"
+          Write-Host "  Platform: $($result.platform.system) / Python $($result.platform.python)"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CargoCommander-Windows
+          path: backend/dist/CargoCommander.exe
+
+  build-macos:
+    name: Build (macOS)
+    needs: test
+    runs-on: macos-14
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python (locked version)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.10"
+
+      - name: Verify Python version
+        run: |
+          python --version
+          python -c "import sys; assert sys.version.startswith('3.12.10'), f'Wrong Python version: ' + sys.version"
+
+      - name: Install tkinter via Homebrew
+        run: |
+          brew install python-tk@3.12 || true
+
+      - name: Verify Tcl/Tk version
+        run: |
+          python -c "import tkinter; print('Tcl/Tk:', tkinter.TkVersion)"
+
+      - name: Install locked build dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r build-requirements.txt
+
+      - name: Validate build environment
+        working-directory: backend
+        run: |
+          python validate_build_env.py --strict
+
+      - name: Run source smoke test
+        working-directory: backend
+        run: |
+          python main.py --smoke-test
+
+      - name: Build app
+        working-directory: backend
+        run: |
+          pyinstaller --clean --noconfirm cargo_commander.spec
+
+      - name: Verify build output
+        working-directory: backend
+        run: |
+          if [ -d "dist/Cargo Commander.app" ]; then
+            echo "Build successful: dist/Cargo Commander.app"
+            du -sh "dist/Cargo Commander.app"
+          else
+            echo "Build failed: app bundle not found"
+            exit 1
+          fi
+
+      - name: Run smoke test on BUILT executable
+        working-directory: backend
+        run: |
+          RESULT_FILE="ci_smoke_result.json"
+          rm -f "$RESULT_FILE"
+
+          EXE_PATH="dist/Cargo Commander.app/Contents/MacOS/CargoCommander"
+
+          "$EXE_PATH" --smoke-test --smoke-output "$RESULT_FILE"
+          EXIT_CODE=$?
+
+          echo "Exit code: $EXIT_CODE"
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "ERROR: Built executable smoke test FAILED"
+            exit 1
+          fi
+
+          if [ ! -f "$RESULT_FILE" ]; then
+            echo "ERROR: Result file not created"
+            exit 1
+          fi
+
+          python -c "
+import json
+with open('$RESULT_FILE') as f:
+    r = json.load(f)
+assert r['success'], 'Smoke test failed'
+print(f'Built executable smoke test PASSED: {len(r[\"checks\"])} checks OK')
+print(f'  Version: {r[\"version\"]}')
+print(f'  Platform: {r[\"platform\"][\"system\"]} / Python {r[\"platform\"][\"python\"]}')
+"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CargoCommander-macOS
+          path: backend/dist/Cargo Commander.app
+
+  build-linux:
+    name: Build (Linux)
+    needs: test
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python (locked version)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.10"
+
+      - name: Verify Python version
+        run: |
+          python --version
+          python -c "import sys; assert sys.version.startswith('3.12.10'), f'Wrong Python version: ' + sys.version"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+
+      - name: Verify Tcl/Tk version
+        run: |
+          python -c "import tkinter; print('Tcl/Tk:', tkinter.TkVersion)"
+
+      - name: Install locked build dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r build-requirements.txt
+
+      - name: Validate build environment
+        working-directory: backend
+        run: |
+          python validate_build_env.py --strict
+
+      - name: Run source smoke test
+        working-directory: backend
+        run: |
+          python main.py --smoke-test
+
+      - name: Build binary
+        working-directory: backend
+        run: |
+          pyinstaller --clean --noconfirm cargo_commander.spec
+
+      - name: Verify build output
+        working-directory: backend
+        run: |
+          if [ -f "dist/CargoCommander" ]; then
+            echo "Build successful: dist/CargoCommander"
+            ls -lh dist/CargoCommander
+          else
+            echo "Build failed: binary not found"
+            exit 1
+          fi
+
+      - name: Run smoke test on BUILT executable
+        working-directory: backend
+        run: |
+          RESULT_FILE="ci_smoke_result.json"
+          rm -f "$RESULT_FILE"
+
+          # Use xvfb-run to provide a virtual display (required for tkinter even in smoke test?
+          # Actually our smoke test does NOT create a Tk instance, so we need a display
+          # But wait - our --smoke-test imports tkinter? Let me check...
+          # Actually the smoke test imports app, which imports logger, config, commands - wait, does it import tkinter?
+          # Let's see: app/__init__.py doesn't import tkinter
+          # app/commands/command_router.py doesn't import tkinter
+          # So --smoke-test should NOT need tkinter... let's verify by running without xvfb
+          # If it fails, we'll add xvfb-run
+
+          ./dist/CargoCommander --smoke-test --smoke-output "$RESULT_FILE"
+          EXIT_CODE=$?
+
+          echo "Exit code: $EXIT_CODE"
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "ERROR: Built executable smoke test FAILED"
+            # If it fails, try with xvfb
+            echo "Trying with xvfb-run..."
+            rm -f "$RESULT_FILE"
+            xvfb-run ./dist/CargoCommander --smoke-test --smoke-output "$RESULT_FILE"
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -ne 0 ]; then
+              echo "Still FAILED even with xvfb"
+              exit 1
+            fi
+          fi
+
+          if [ ! -f "$RESULT_FILE" ]; then
+            echo "ERROR: Result file not created"
+            exit 1
+          fi
+
+          python -c "
+import json
+with open('$RESULT_FILE') as f:
+    r = json.load(f)
+assert r['success'], 'Smoke test failed'
+print(f'Built executable smoke test PASSED: {len(r[\"checks\"])} checks OK')
+print(f'  Version: {r[\"version\"]}')
+print(f'  Platform: {r[\"platform\"][\"system\"]} / Python {r[\"platform\"][\"python\"]}')
+"
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CargoCommander-Linux
+          path: backend/dist/CargoCommander

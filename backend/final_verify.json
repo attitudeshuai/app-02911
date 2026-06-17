@@ -1,0 +1,62 @@
+{
+  "success": true,
+  "version": "1.0.0",
+  "checks": [
+    {
+      "name": "App version",
+      "passed": true,
+      "detail": "1.0.0"
+    },
+    {
+      "name": "All modules imported",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Theme loaded",
+      "passed": true,
+      "detail": "bg=#0C0C0C"
+    },
+    {
+      "name": "Window config",
+      "passed": true,
+      "detail": "1200x800"
+    },
+    {
+      "name": "CommandRouter created",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "ver command",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "help command",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "echo command",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "pwd command",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "cls command",
+      "passed": true,
+      "detail": ""
+    }
+  ],
+  "timestamp": 1781719271.7873554,
+  "platform": {
+    "system": "Windows",
+    "python": "3.12.10"
+  },
+  "error": null
+}

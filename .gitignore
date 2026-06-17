@@ -37,3 +37,13 @@ test_data/
 
 # Distribution
 *.spec
+!cargo_commander.spec
+
+# Build artifacts
+backend/dist/
+backend/build/
+backend/*.spec
+
+# Smoke test output
+*_smoke_result.json
+smoke_result.json
