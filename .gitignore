@@ -5,7 +5,7 @@ __pycache__/
 *.so
 *.egg-info/
 dist/
-build/
+/build/
 *.egg
 .eggs/
 *.whl
@@ -35,5 +35,8 @@ test_data/
 # Docker
 .docker/
 
-# Distribution
-*.spec
+# Distribution build outputs (the spec itself is committed source)
+/backend/dist/
+/backend/build/dist/
+/backend/build/build/
+*.spec.bak

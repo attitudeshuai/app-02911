@@ -1,0 +1,25 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["backend/build", "dist", "build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/*" = ["B011"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["backend/tests"]
+pythonpath = ["backend"]
+markers = [
+    "smoke: fast headless checks (import + basic commands)",
+    "gui: requires a display (xvfb on Linux)",
+    "cargo: requires a real cargo/rust toolchain installed",
+]
+addopts = "-ra --strict-markers"

@@ -3,12 +3,14 @@ Multi-tab terminal manager.
 Allows multiple terminal sessions with independent command history,
 working directories, and output buffers.
 """
-import tkinter as tk
-from tkinter import font as tkfont
-from typing import Callable, Optional
 
-from app.config import Theme, Font, App
+import os
+import tkinter as tk
+from collections.abc import Callable
+from tkinter import font as tkfont
+
 from app.commands.base import OutputType
+from app.config import App, Font, Theme
 from app.gui.terminal_widget import TerminalWidget
 from app.logger import logger
 
@@ -26,14 +28,25 @@ class TabButton(tk.Frame):
         self._font = tkfont.Font(family="Consolas", size=Font.SIZE_SMALL)
 
         self._label = tk.Label(
-            self, text=f" {title} ", bg=Theme.TOOLBAR_BG, fg="#888888",
-            font=self._font, cursor="hand2", padx=4, pady=2,
+            self,
+            text=f" {title} ",
+            bg=Theme.TOOLBAR_BG,
+            fg="#888888",
+            font=self._font,
+            cursor="hand2",
+            padx=4,
+            pady=2,
         )
         self._label.pack(side=tk.LEFT)
 
         self._close_btn = tk.Label(
-            self, text="×", bg=Theme.TOOLBAR_BG, fg="#666666",
-            font=self._font, cursor="hand2", padx=2,
+            self,
+            text="×",
+            bg=Theme.TOOLBAR_BG,
+            fg="#666666",
+            font=self._font,
+            cursor="hand2",
+            padx=2,
         )
         self._close_btn.pack(side=tk.LEFT)
 
@@ -44,8 +57,9 @@ class TabButton(tk.Frame):
         self._label.bind("<Button-1>", lambda e: self._on_select(self._tab_id))
         self._close_btn.bind("<Button-1>", lambda e: self._on_close(self._tab_id))
         self._close_btn.bind("<Enter>", lambda e: self._close_btn.config(fg="#FF6666"))
-        self._close_btn.bind("<Leave>", lambda e: self._close_btn.config(
-            fg="#CCCCCC" if self._active else "#666666"))
+        self._close_btn.bind(
+            "<Leave>", lambda e: self._close_btn.config(fg="#CCCCCC" if self._active else "#666666")
+        )
 
     def set_active(self, active: bool):
         """Update visual state."""
@@ -72,7 +86,7 @@ class TabTerminalManager(tk.Frame):
         super().__init__(parent, bg=Theme.BG, **kwargs)
         self._on_command = on_command
         self._tabs: dict[int, dict] = {}  # tab_id -> {widget, cwd, button, title}
-        self._active_tab: Optional[int] = None
+        self._active_tab: int | None = None
         self._next_id: int = 0
 
         self._build_tab_bar()
@@ -90,9 +104,13 @@ class TabTerminalManager(tk.Frame):
 
         # New tab button
         new_btn = tk.Label(
-            self._tab_bar, text=" + ", bg=Theme.TOOLBAR_BG, fg="#888888",
+            self._tab_bar,
+            text=" + ",
+            bg=Theme.TOOLBAR_BG,
+            fg="#888888",
             font=tkfont.Font(family="Consolas", size=Font.SIZE_SMALL),
-            cursor="hand2", padx=4,
+            cursor="hand2",
+            padx=4,
         )
         new_btn.pack(side=tk.LEFT, padx=2)
         new_btn.bind("<Button-1>", lambda e: self.add_tab())
@@ -101,7 +119,7 @@ class TabTerminalManager(tk.Frame):
 
         tk.Frame(self, bg=Theme.BORDER, height=1).pack(fill=tk.X)
 
-    def add_tab(self, title: Optional[str] = None, cwd: Optional[str] = None) -> int:
+    def add_tab(self, title: str | None = None, cwd: str | None = None) -> int:
         """Create a new terminal tab. Returns the tab ID."""
         if len(self._tabs) >= self.MAX_TABS:
             logger.warning("Maximum tab limit reached (%d)", self.MAX_TABS)
@@ -172,14 +190,14 @@ class TabTerminalManager(tk.Frame):
         logger.info("Tab closed: %d", tab_id)
 
     @property
-    def active_terminal(self) -> Optional[TerminalWidget]:
+    def active_terminal(self) -> TerminalWidget | None:
         """Get the currently active terminal widget."""
         if self._active_tab is not None and self._active_tab in self._tabs:
             return self._tabs[self._active_tab]["widget"]
         return None
 
     @property
-    def active_cwd(self) -> Optional[str]:
+    def active_cwd(self) -> str | None:
         """Get the cwd of the active tab."""
         if self._active_tab is not None and self._active_tab in self._tabs:
             return self._tabs[self._active_tab]["cwd"]
@@ -220,7 +238,3 @@ class TabTerminalManager(tk.Frame):
         terminal = self.active_terminal
         if terminal:
             terminal.finish_command()
-
-
-# Need os for update_active_cwd
-import os

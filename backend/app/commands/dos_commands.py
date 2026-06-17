@@ -2,13 +2,13 @@
 DOS built-in command implementations.
 Simulates classic DOS commands: dir, cd, cls, type, mkdir, rmdir, del, echo, help, ver, exit.
 """
-import os
-import shutil
-import platform
-from datetime import datetime
-from typing import Optional
 
-from app.commands.base import CommandResult, OutputType
+import os
+import platform
+import shutil
+from datetime import datetime
+
+from app.commands.base import CommandResult
 from app.logger import logger
 
 
@@ -75,7 +75,9 @@ class DosCommands:
             result.add_line("")
             result.add_system(f"    {total_files:>8} File(s)  {total_size:>14,} bytes")
             result.add_system(f"    {total_dirs:>8} Dir(s)")
-            logger.info("DIR command executed on: %s (%d files, %d dirs)", target, total_files, total_dirs)
+            logger.info(
+                "DIR command executed on: %s (%d files, %d dirs)", target, total_files, total_dirs
+            )
         except PermissionError:
             result.add_error(f"Access denied: {target}")
         except OSError as e:
@@ -135,7 +137,7 @@ class DosCommands:
             return result
 
         try:
-            with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+            with open(filepath, encoding="utf-8", errors="replace") as f:
                 content = f.read()
             result.add_line(content)
             logger.info("TYPE: displayed file %s", filepath)
@@ -236,7 +238,9 @@ class DosCommands:
         result = CommandResult()
         result.add_system("")
         result.add_system("Rust Cargo DOS Commander [Version 1.0.0]")
-        result.add_system(f"Python {platform.python_version()} on {platform.system()} {platform.release()}")
+        result.add_system(
+            f"Python {platform.python_version()} on {platform.system()} {platform.release()}"
+        )
         result.add_system("")
         return result
 
@@ -269,7 +273,9 @@ class DosCommands:
                 result.add_warning(f"{prefix}[ACCESS DENIED]")
                 return
 
-            dirs = [e for e in entries if os.path.isdir(os.path.join(path, e)) and not e.startswith(".")]
+            dirs = [
+                e for e in entries if os.path.isdir(os.path.join(path, e)) and not e.startswith(".")
+            ]
             for i, d in enumerate(dirs):
                 is_last = i == len(dirs) - 1
                 connector = "└── " if is_last else "├── "
@@ -290,7 +296,7 @@ class DosCommands:
         result.add_system("═══════════════════════════════════════════════════════════")
         result.add_line("")
 
-        for cmd, desc in sorted(DosCommands.HELP_TEXT.items()):
+        for _cmd, desc in sorted(DosCommands.HELP_TEXT.items()):
             result.add_line(f"  {desc}")
 
         result.add_line("")

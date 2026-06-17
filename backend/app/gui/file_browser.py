@@ -3,14 +3,14 @@ File browser panel.
 Displays the project directory tree with expand/collapse, file icons,
 and double-click to open files in the terminal via 'type' command.
 """
+
 import os
 import tkinter as tk
+from collections.abc import Callable
 from tkinter import font as tkfont
-from typing import Callable, Optional
 
-from app.config import Theme, Font
+from app.config import Font, Theme
 from app.logger import logger
-
 
 # File type icon mapping
 FILE_ICONS = {
@@ -46,7 +46,9 @@ class FileTreeNode:
 class FileBrowser(tk.Frame):
     """A tree-style file browser panel with expand/collapse support."""
 
-    def __init__(self, parent, root_path: str, on_file_action: Callable[[str, str], None], **kwargs):
+    def __init__(
+        self, parent, root_path: str, on_file_action: Callable[[str, str], None], **kwargs
+    ):
         """
         Args:
             parent: Parent widget.
@@ -57,7 +59,7 @@ class FileBrowser(tk.Frame):
         self._root_path = root_path
         self._on_file_action = on_file_action
         self._nodes: list[FileTreeNode] = []
-        self._selected_index: Optional[int] = -1
+        self._selected_index: int | None = -1
 
         self._setup_ui()
         self.refresh()
@@ -69,17 +71,26 @@ class FileBrowser(tk.Frame):
         header.pack(fill=tk.X)
 
         self._title = tk.Label(
-            header, text=" 📁 FILE EXPLORER", bg=Theme.TOOLBAR_BG,
-            fg="#CCCCCC", font=tkfont.Font(family="Consolas", size=Font.SIZE_SMALL, weight="bold"),
-            anchor=tk.W, padx=6, pady=4,
+            header,
+            text=" 📁 FILE EXPLORER",
+            bg=Theme.TOOLBAR_BG,
+            fg="#CCCCCC",
+            font=tkfont.Font(family="Consolas", size=Font.SIZE_SMALL, weight="bold"),
+            anchor=tk.W,
+            padx=6,
+            pady=4,
         )
         self._title.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Refresh button
         refresh_btn = tk.Label(
-            header, text=" ↻ ", bg=Theme.TOOLBAR_BG, fg="#AAAAAA",
+            header,
+            text=" ↻ ",
+            bg=Theme.TOOLBAR_BG,
+            fg="#AAAAAA",
             font=tkfont.Font(family="Consolas", size=Font.SIZE_SMALL),
-            cursor="hand2", padx=4,
+            cursor="hand2",
+            padx=4,
         )
         refresh_btn.pack(side=tk.RIGHT, padx=4)
         refresh_btn.bind("<Button-1>", lambda e: self.refresh())
@@ -88,9 +99,13 @@ class FileBrowser(tk.Frame):
 
         # Collapse all button
         collapse_btn = tk.Label(
-            header, text=" ⊟ ", bg=Theme.TOOLBAR_BG, fg="#AAAAAA",
+            header,
+            text=" ⊟ ",
+            bg=Theme.TOOLBAR_BG,
+            fg="#AAAAAA",
             font=tkfont.Font(family="Consolas", size=Font.SIZE_SMALL),
-            cursor="hand2", padx=4,
+            cursor="hand2",
+            padx=4,
         )
         collapse_btn.pack(side=tk.RIGHT)
         collapse_btn.bind("<Button-1>", lambda e: self._collapse_all())
@@ -103,19 +118,24 @@ class FileBrowser(tk.Frame):
         tree_frame = tk.Frame(self, bg=Theme.TOOLBAR_BG)
         tree_frame.pack(fill=tk.BOTH, expand=True)
 
-        self._scrollbar = tk.Scrollbar(tree_frame, bg=Theme.SCROLLBAR,
-                                       troughcolor=Theme.TOOLBAR_BG, highlightthickness=0, bd=0)
+        self._scrollbar = tk.Scrollbar(
+            tree_frame, bg=Theme.SCROLLBAR, troughcolor=Theme.TOOLBAR_BG, highlightthickness=0, bd=0
+        )
         self._scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         self._canvas = tk.Canvas(
-            tree_frame, bg=Theme.TOOLBAR_BG, highlightthickness=0,
+            tree_frame,
+            bg=Theme.TOOLBAR_BG,
+            highlightthickness=0,
             yscrollcommand=self._scrollbar.set,
         )
         self._canvas.pack(fill=tk.BOTH, expand=True)
         self._scrollbar.config(command=self._canvas.yview)
 
         self._inner_frame = tk.Frame(self._canvas, bg=Theme.TOOLBAR_BG)
-        self._canvas_window = self._canvas.create_window((0, 0), window=self._inner_frame, anchor=tk.NW)
+        self._canvas_window = self._canvas.create_window(
+            (0, 0), window=self._inner_frame, anchor=tk.NW
+        )
 
         self._inner_frame.bind("<Configure>", self._on_frame_configure)
         self._canvas.bind("<Configure>", self._on_canvas_configure)
@@ -130,7 +150,9 @@ class FileBrowser(tk.Frame):
     def _on_mousewheel(self, event):
         """Handle mouse wheel scrolling."""
         if self.winfo_containing(event.x_root, event.y_root):
-            self._canvas.yview_scroll(-1 * (event.delta // 120 or (1 if event.delta > 0 else -1)), "units")
+            self._canvas.yview_scroll(
+                -1 * (event.delta // 120 or (1 if event.delta > 0 else -1)), "units"
+            )
 
     def set_root(self, path: str):
         """Change the root directory."""
@@ -144,13 +166,19 @@ class FileBrowser(tk.Frame):
             widget.destroy()
 
         if not os.path.isdir(self._root_path):
-            tk.Label(self._inner_frame, text="  (no directory)", bg=Theme.TOOLBAR_BG,
-                     fg="#666666", font=("Consolas", Font.SIZE_SMALL)).pack(anchor=tk.W)
+            tk.Label(
+                self._inner_frame,
+                text="  (no directory)",
+                bg=Theme.TOOLBAR_BG,
+                fg="#666666",
+                font=("Consolas", Font.SIZE_SMALL),
+            ).pack(anchor=tk.W)
             return
 
         # Add root node expanded
-        root_node = FileTreeNode(self._root_path, os.path.basename(self._root_path) or self._root_path,
-                                 True, 0)
+        root_node = FileTreeNode(
+            self._root_path, os.path.basename(self._root_path) or self._root_path, True, 0
+        )
         root_node.expanded = True
         root_node.children_loaded = True
         self._nodes.append(root_node)
@@ -164,7 +192,10 @@ class FileBrowser(tk.Frame):
         if depth > max_depth:
             return
         try:
-            entries = sorted(os.listdir(parent_path), key=lambda e: (not os.path.isdir(os.path.join(parent_path, e)), e.lower()))
+            entries = sorted(
+                os.listdir(parent_path),
+                key=lambda e: (not os.path.isdir(os.path.join(parent_path, e)), e.lower()),
+            )
         except PermissionError:
             return
 
@@ -216,8 +247,14 @@ class FileBrowser(tk.Frame):
         fg = "#E8C36A" if node.is_dir else "#CCCCCC"
 
         row = tk.Label(
-            self._inner_frame, text=text, bg=Theme.TOOLBAR_BG, fg=fg,
-            font=("Consolas", Font.SIZE_SMALL), anchor=tk.W, padx=4, pady=1,
+            self._inner_frame,
+            text=text,
+            bg=Theme.TOOLBAR_BG,
+            fg=fg,
+            font=("Consolas", Font.SIZE_SMALL),
+            anchor=tk.W,
+            padx=4,
+            pady=1,
             cursor="hand2",
         )
         row.pack(fill=tk.X)
@@ -233,12 +270,13 @@ class FileBrowser(tk.Frame):
             if node.expanded and not node.children_loaded:
                 # Insert children after this node
                 idx = self._nodes.index(node)
-                children_before = len(self._nodes)
                 temp_nodes = []
                 self._nodes_temp = temp_nodes
                 try:
-                    entries = sorted(os.listdir(node.path),
-                                     key=lambda e: (not os.path.isdir(os.path.join(node.path, e)), e.lower()))
+                    entries = sorted(
+                        os.listdir(node.path),
+                        key=lambda e: (not os.path.isdir(os.path.join(node.path, e)), e.lower()),
+                    )
                 except PermissionError:
                     entries = []
 
