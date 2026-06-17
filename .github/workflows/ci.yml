@@ -1,0 +1,145 @@
+name: CI - Test & Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk xvfb
+
+      - name: Install Python dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Check imports
+        working-directory: backend
+        run: python main.py --check-imports
+
+      - name: Run self-test (no GUI)
+        working-directory: backend
+        run: python main.py --selftest
+
+      - name: Run unit tests
+        working-directory: backend
+        run: python -m pytest tests/test_commands.py -v
+
+      - name: Run GUI smoke test (Linux with xvfb)
+        if: runner.os == 'Linux'
+        working-directory: backend
+        run: xvfb-run -a python tests/test_gui_smoke.py
+
+      - name: Run GUI smoke test (Windows/macOS)
+        if: runner.os != 'Linux'
+        working-directory: backend
+        run: python tests/test_gui_smoke.py
+
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+
+      - name: Install build dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        working-directory: backend
+        run: |
+          pyinstaller --clean --noconfirm --onefile --windowed `
+            --name cargo-commander `
+            --hidden-import=tkinter `
+            --hidden-import=PIL `
+            main.py
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        working-directory: backend
+        run: |
+          pyinstaller --clean --noconfirm --onefile --windowed \
+            --name cargo-commander \
+            --hidden-import=tkinter \
+            --hidden-import=PIL \
+            main.py
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        working-directory: backend
+        run: |
+          pyinstaller --clean --noconfirm --onefile --windowed \
+            --name cargo-commander \
+            --hidden-import=tkinter \
+            --hidden-import=PIL \
+            main.py
+
+      - name: Upload build artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-commander-windows
+          path: backend/dist/cargo-commander.exe
+
+      - name: Upload build artifact (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-commander-macos
+          path: backend/dist/cargo-commander
+
+      - name: Upload build artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-commander-linux
+          path: backend/dist/cargo-commander

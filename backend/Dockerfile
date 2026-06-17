@@ -7,10 +7,12 @@ FROM python:3.12-slim AS base
 # 配置国内镜像源加速
 RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
 
-# Install system dependencies for tkinter and Rust
+# Install system dependencies for tkinter, Rust, and headless testing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-tk \
     tk-dev \
+    xvfb \
+    x11-utils \
     curl \
     gcc \
     && rm -rf /var/lib/apt/lists/*
@@ -23,7 +25,8 @@ WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
 # Copy application code
 COPY . .
@@ -31,5 +34,5 @@ COPY . .
 # Create workspace directory
 RUN mkdir -p /root/rust_projects
 
-# Default command (headless validation - imports check)
-CMD ["python", "-c", "import app; print(f'Cargo Commander v{app.__version__} - OK')"]
+# Default command - run full test suite (headless)
+CMD ["bash", "-c", "echo '=== Import Check ===' && python main.py --check-imports && echo '' && echo '=== Self-Test ===' && python main.py --selftest && echo '' && echo '=== Unit Tests ===' && python -m pytest tests/test_commands.py -v && echo '' && echo '=== GUI Smoke Test (xvfb) ===' && xvfb-run -a python tests/test_gui_smoke.py"]
